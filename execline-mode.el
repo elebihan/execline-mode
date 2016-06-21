@@ -22,9 +22,26 @@
 
 ;; Commentary:
 
-;; This mode provides syntax highlighting for execline scripts.
+;; This mode provides syntax highlighting and interactive commands for execline
+;; scripts.
 
 ;; Code:
+
+(defgroup execline-mode nil
+  "Support for editing execline script"
+  :link '(url-link "http://skarnet.org/software/execline/index.html")
+  :group 'languages)
+
+(defcustom execline-program
+  (or (executable-find "execlineb") "/usr/bin/execlineb")
+  "*Location of the execlineb program"
+  :type  '(file :must-match t)
+  :group 'execline-mode)
+
+(defcustom execline-buffer "*execline output*"
+  "Name of the buffer to attach to the execlineb process"
+  :type '(string :tag "Buffer name")
+  :group 'execline-mode)
 
 (defconst execline-proc-progs
   '("cd"
@@ -107,10 +124,70 @@
 
 (defvar execline-mode-hook nil)
 
+(defun execline-execute-string (string)
+  "Execute the given STRING as execline script"
+  (interactive "sScript to execute: ")
+  (let ((execline-args (list mode-name
+                             execline-buffer
+                             execline-program
+                             "-c"
+                             string)))
+    (set-process-sentinel
+     (apply 'start-process execline-args)
+     'execline-sentinel)))
+
+(defun execline-execute-region (start end)
+  "Execute the region delimited by START and END as execline script"
+  (interactive "r")
+  (let ((text (buffer-substring-no-properties start end)))
+    (execline-execute-string text)))
+
+(defun execline-execute-buffer (buffer)
+  "Execute entire buffer as execline script"
+  (interactive "bScript buffer to execute: ")
+  (with-current-buffer buffer
+    (save-restriction
+      (widen)
+      (execline-execute-region (point-min) (point-max)))))
+
+(defun execline-execute-file (filename)
+  "Execute an execline script file"
+  (interactive "fScript file to execute: ")
+  (let ((execline-args (list mode-name
+                             execline-buffer
+                             execline-program
+                             filename)))
+    (set-process-sentinel
+     (apply 'start-process execline-args)
+     'execline-sentinel)))
+
+(defun execline-sentinel (proc event)
+  (let ((buffer (process-buffer proc))
+        (message (replace-regexp-in-string "\n$" "" event)))
+    (if (or (string= message "finished")
+            (string-match "exited abnormally" message))
+        (when (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (switch-to-buffer-other-window buffer)
+            (end-of-buffer)
+            (message "Execution of execline script %s" message)))
+      (message "Failed to execute execline script: %s" message))))
+
+(defvar execline-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "\C-c\C-s" 'execline-execute-string)
+    (define-key map "\C-c\C-r" 'execline-execute-region)
+    (define-key map "\C-c\C-c" 'execline-execute-buffer)
+    (define-key map "\C-c\C-l" 'execline-execute-file)
+    map)
+  "Keymap for `execline-mode'.")
+
 ;;;###autoload
 (define-derived-mode execline-mode prog-mode
   "execline"
-  "Mode for editing execline scripts"
+  "Mode for editing execline scripts
+
+\\{execline-mode-map} "
   (setq font-lock-defaults '((execline-font-lock-keywords)))
   (setq comment-start "#")
   (set-syntax-table execline-mode-syntax-table)
