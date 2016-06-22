@@ -22,8 +22,18 @@
 
 ;; Commentary:
 
-;; This mode provides syntax highlighting and interactive commands for execline
-;; scripts.
+;; This mode provides syntax highlighting and interactive commands for
+;; [execline][] scripts.
+;;
+;; Installation:
+;;
+;; Add the following lines to `.emacs':
+;;
+;;    (add-to-list 'load-path "/path/to/execline-mode/")
+;;    (require 'execline-mode)
+;;
+;;
+;; [execline]: http://skarnet.org/software/execline/index.html
 
 ;; Code:
 
