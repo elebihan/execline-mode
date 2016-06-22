@@ -27,6 +27,8 @@
 
 ;; Code:
 
+(require 'smie)
+
 (defgroup execline-mode nil
   "Support for editing execline script"
   :link '(url-link "http://skarnet.org/software/execline/index.html")
@@ -41,6 +43,11 @@
 (defcustom execline-buffer "*execline output*"
   "Name of the buffer to attach to the execlineb process"
   :type '(string :tag "Buffer name")
+  :group 'execline-mode)
+
+(defcustom execline-indent-offset 2
+  "Indent execline code by this number of spaces."
+  :type 'integer
   :group 'execline-mode)
 
 (defconst execline-proc-progs
@@ -182,6 +189,14 @@
     map)
   "Keymap for `execline-mode'.")
 
+(defun execline-smie-rules (kind token)
+  (pcase (cons kind token)
+    (`(:elem . basic) execline-indent-offset)
+    (`(:before . "{")
+     (if (not (smie-rule-hanging-p))
+         (smie-rule-parent 0)))
+    (`(:after . "}") (smie-rule-parent (- execline-indent-offset)))))
+
 ;;;###autoload
 (define-derived-mode execline-mode prog-mode
   "execline"
@@ -190,6 +205,10 @@
 \\{execline-mode-map} "
   (setq font-lock-defaults '((execline-font-lock-keywords)))
   (setq comment-start "#")
+  (setq indent-tabs-mode nil)
+  (smie-setup nil #'execline-smie-rules)
+  (setq smie-indent-basic execline-indent-offset)
+  (setq electric-indent-chars (cons "}" electric-indent-chars))
   (set-syntax-table execline-mode-syntax-table)
   (run-hooks 'execline-mode-hook))
 
