@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016 Eric Le Bihan
 ;; Author: Eric Le Bihan <eric.le.bihan.dev@free.fr>
-;; Version: 0.2.0
+;; Version: 0.3.1
 ;; Keywords: languages
 ;; URL: https://github.com/elebihan/execline-mode/
 ;; Package-Requires: ((emacs "24.0"))
